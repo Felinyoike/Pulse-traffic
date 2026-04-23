@@ -36,7 +36,7 @@ def get_db():
 async def ingest_traffic_data(payload: TrafficPayload, db: Session = Depends(get_db)):
     try:
         new_reading = models.TrafficReading(
-            node_id=payload.node_id,
+            node_id=payload.node_id or "simulator",
             timestamp=payload.timestamp,
             vehicle_count=payload.vehicle_count,
             speed=payload.speed,
@@ -50,9 +50,12 @@ async def ingest_traffic_data(payload: TrafficPayload, db: Session = Depends(get
 
         return {
             "status": "success",
-            "message": "Traffic data saved to database  ",
+            "message": "Traffic data saved to database",
             "data_received": payload.model_dump()
         }
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"System failure during ingestion: {str(e)} [cite: 10]")
@@ -87,6 +90,8 @@ async def create_prection(node_id: str, db: Session = Depends(get_db)):
         
         logger.info(f"Generated {prediction.predicted_level} congestion prediction for {node_id}")
         return prediction
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Prediction generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error during prediction")

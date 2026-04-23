@@ -1,12 +1,23 @@
+from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field, field_validator
-from datetime import datetime
 
 class TrafficPayload(BaseModel):
-    node_id: str = Field(..., description="Unique identifier for the simulated sensor node")
+    node_id: str = Field(
+        default="simulator",
+        description="Unique identifier for the simulated sensor node",
+    )
     timestamp: datetime = Field(..., description="Time the reading was taken (ISO 8601 format)")
-    vehicle_count: int = Field(..., description="Number of vehicles detected")
-    speed: float = Field(..., description="Average speed in km/h")
-    density: float = Field(..., description="Traffic density percentage")
+    vehicle_count: int = Field(..., ge=0, le=200, description="Number of vehicles detected")
+    speed: float = Field(..., ge=0, le=120, description="Average speed in km/h")
+    density: float = Field(..., ge=0, le=1, description="Traffic density ratio")
+
+    @field_validator('timestamp')
+    @classmethod
+    def ensure_timestamp_is_timezone_aware(cls, value):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
     # QA Validation: Ensure no negative values are ingested from the simulator
     @field_validator('vehicle_count', 'speed', 'density')
@@ -19,8 +30,8 @@ class TrafficPayload(BaseModel):
     @field_validator('density')
     @classmethod
     def check_density_range(cls, val):
-        if val < 0 or val > 100:
-            raise ValueError("Density cannot exceed 100%")
+        if val < 0 or val > 1:
+            raise ValueError("Density must be between 0 and 1")
         return val
     
 class TrafficResponse(TrafficPayload):

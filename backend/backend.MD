@@ -87,3 +87,13 @@ You can now access the interactive API documentation by navigating to http://127
 - `POST /traffic-data` - Ingest new traffic data from a sensor node.
 - `GET /traffic-data` - Retrieve a list of historical traffic records (supports pagination and filtering by `node_id`).
 - `POST /predict/{node_id}` - Generate a congestion prediction for a given node.
+
+### Traffic payload contract
+
+The ingestion endpoint accepts `vehicle_count`, `speed`, `density`, and `timestamp`. The backend also accepts an optional `node_id` and defaults it to `simulator` when omitted.
+
+Accepted ranges:
+
+- `vehicle_count`: 0 to 200
+- `speed`: 0 to 120
+- `density`: 0 to 1
